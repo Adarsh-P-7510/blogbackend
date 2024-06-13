@@ -3,6 +3,7 @@ const mongoose = require("mongoose")
 const cors = require("cors")
 const bcrypt = require("bcryptjs")
 const {blogmodel} = require("./models/blog")
+const jsonwebtoken = require("jsonwebtoken")
 
 const app = express()
 app.use(cors())
@@ -27,6 +28,48 @@ app.post("/signup", async(req,res)=>{ // using asynch to call another async
 
     
     res.json({"status":"success"})
+})
+app.post("/signin",(req,res)=>{
+    let input = req.body
+    blogmodel.find({"emaild":req.body.emaild}).then(
+        (response)=>{
+            if (response.length > 0) { //checking the inserted password and dbpasswordarray the use console to check if its working before declaring the dbpassword variable
+                let dbpassword = response[0].password
+                console.log(dbpassword)
+                bcrypt.compare(input.password,dbpassword,(error,ismatch)=>{
+                    if (ismatch) {
+                        
+                        jsonwebtoken.sign({emaild:input.emaild},"blog-app",{expiresIn:"1d"},
+                            (error,token)=>{
+                                if (error) {
+                                    res.json({"status":"unable to create token"})
+                                    
+                                    
+                                } else {
+                                    res.json({"status":"success","userid":response[0]._id,"token":token})
+                                    
+                                    
+                                }
+                            }
+                        )
+                        
+                    } else {
+                        res.json({"status":"incorrect"})
+                        
+                    }
+                    
+                })
+                
+            } else {
+                res.json({"status":"success"})
+                
+            }
+        }
+    ).catch()
+    
+    
+    
+    
 })
 app.listen(8080,()=>{
     console.log("server started")
